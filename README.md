@@ -1,40 +1,100 @@
-To conditionally activate the "Deploy to Azure Blob Storage" stage based on a boolean property, you can add a **parameter** to the pipeline. Jenkins provides a `parameters` block that allows you to define input parameters. We can add a boolean parameter to control whether the deployment step is executed.
+Certainly! Below is a **README.md** template for setting up a Jenkins pipeline for running **E2E tests** with **Playwright** and deploying a **React app** to **Azure Blob Storage**. I've also included explanations and diagrams to make it easy to understand and follow.
 
-Here’s how you can update the pipeline:
+```markdown
+# Jenkins Pipeline for E2E Testing and Azure Blob Storage Deployment
 
-### Updated Jenkinsfile with Deploy Stage Controlled by Boolean Property:
+This README explains how to set up a **Jenkins pipeline** for:
+1. Running **E2E tests** for a **React app** using **Playwright**.
+2. Deploying the **React app** to **Azure Blob Storage**.
+
+## Requirements
+
+### 1. **Jenkins Setup**
+- **Jenkins Agent**: Ensure the Jenkins agent where the pipeline will run has **Node.js**, **pnpm**, and **Azure CLI** installed.
+- **Jenkins Plugins**:
+  - **Pipeline** (Default in Jenkins)
+  - **Credentials Plugin** (For securely storing Azure credentials)
+  - Optionally: **Azure CLI Plugin** (for better integration with Azure CLI commands)
+
+### 2. **Azure Setup**
+- **Azure Storage Account**: A storage account in Azure with a Blob container for storing the React app's build.
+- **Azure Service Principal**: A service principal with permissions to access Azure Blob Storage.
+- **Azure Storage Account Key**: Key for accessing the Blob Storage account.
+
+### 3. **Jenkins Credentials**
+- **Azure Service Principal Credentials**: Store `client_id`, `client_secret`, and `tenant_id` in Jenkins as a secret.
+- **Azure Storage Account Key**: Store the `account_key` of your Azure Storage in Jenkins as a secret.
+
+## Jenkins Pipeline Overview
+
+The pipeline consists of the following stages:
+1. **Checkout**: Checkout the source code from version control.
+2. **Install pnpm**: Install `pnpm` (a fast package manager) globally.
+3. **Install Dependencies**: Install dependencies in the `app` folder using `pnpm`.
+4. **Build React App**: Build the React app in the `app` folder.
+5. **Run Playwright E2E Tests**: Run Playwright tests located in the `e2e` folder.
+6. **Deploy to Azure Blob Storage**: Upload the build files to Azure Blob Storage, conditional on the `DEPLOY_TO_AZURE` parameter.
+
+### Flow Diagram
+
+```plaintext
++-----------------+      +---------------------+      +-------------------------+
+|                 |      |                     |      |                         |
+| Checkout Code   |----->| Install Dependencies |----->| Build React Application |
+| (Git Repo)      |      | (app folder)         |      | (app folder)             |
+|                 |      |                     |      |                         |
++-----------------+      +---------------------+      +-------------------------+
+                                                              |
+                                                              v
+                                                     +---------------------+
+                                                     | Run Playwright E2E  |
+                                                     | Tests (e2e folder)  |
+                                                     +---------------------+
+                                                              |
+                     +----------------------------------------+
+                     |
+                     v
+        +---------------------------------------------+
+        | Conditional Deployment to Azure Blob Storage|
+        | (if DEPLOY_TO_AZURE is true)                |
+        +---------------------------------------------+
+                     |
+                     v
+         +-----------------------------+
+         | Upload to Azure Blob Storage|
+         | (app/build to Blob Storage) |
+         +-----------------------------+
+```
+
+## Jenkins Pipeline Example
+
+Here’s a Jenkins pipeline `Jenkinsfile` that performs the steps described above:
 
 ```groovy
 pipeline {
     agent any
 
     parameters {
-        // Define a boolean parameter to control deployment to Azure Blob Storage
         booleanParam(name: 'DEPLOY_TO_AZURE', defaultValue: false, description: 'Set to true to deploy the React app to Azure Blob Storage')
     }
 
     environment {
-        // You can define environment variables here
         NODE_HOME = tool name: 'NodeJS', type: 'NodeJSInstallation'
         PATH = "${NODE_HOME}/bin:${env.PATH}"
-
-        // Azure Storage Account Info
         AZURE_STORAGE_ACCOUNT = 'your-storage-account-name'
         AZURE_CONTAINER_NAME = 'your-container-name'
-        AZURE_STORAGE_KEY = credentials('azure-storage-key') // Store the Azure storage key as Jenkins secret
+        AZURE_STORAGE_KEY = credentials('azure-storage-key') 
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repository
                 checkout scm
             }
         }
 
         stage('Install pnpm') {
             steps {
-                // Install pnpm globally if not already installed
                 script {
                     sh 'npm install -g pnpm'
                 }
@@ -43,7 +103,6 @@ pipeline {
 
         stage('Install dependencies') {
             steps {
-                // Install dependencies in the 'app' folder using pnpm
                 script {
                     dir('app') {
                         sh 'pnpm install'
@@ -54,7 +113,6 @@ pipeline {
 
         stage('Build React App') {
             steps {
-                // Build the React application in the 'app' folder
                 script {
                     dir('app') {
                         sh 'pnpm run build'
@@ -65,11 +123,10 @@ pipeline {
 
         stage('Run Playwright E2E Tests') {
             steps {
-                // Run Playwright tests located in the 'e2e' folder
                 script {
                     dir('e2e') {
-                        sh 'npx playwright install'  // Install Playwright browsers
-                        sh 'pnpm run test:e2e'       // Run Playwright E2E tests
+                        sh 'npx playwright install'
+                        sh 'pnpm run test:e2e'
                     }
                 }
             }
@@ -77,22 +134,17 @@ pipeline {
 
         stage('Deploy to Azure Blob Storage') {
             when {
-                // The deploy stage will run only if the boolean parameter DEPLOY_TO_AZURE is true
                 expression { params.DEPLOY_TO_AZURE == true }
             }
             steps {
                 script {
-                    // Install Azure CLI if it's not already installed
                     sh 'curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash'
-
-                    // Login to Azure using a service principal (ensure you have set the credentials)
                     withCredentials([azureServicePrincipal(credentialsId: 'azure-sp-credentials')]) {
                         sh '''
                             az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
                         '''
                     }
 
-                    // Upload the build folder from the 'app' directory to Azure Blob Storage
                     sh """
                         az storage blob upload-batch \
                             --account-name $AZURE_STORAGE_ACCOUNT \
@@ -109,51 +161,52 @@ pipeline {
 
     post {
         success {
-            // Notify or perform actions on success
             echo 'Pipeline completed successfully.'
         }
         failure {
-            // Handle failure (e.g., send notifications)
             echo 'Pipeline failed.'
         }
     }
 }
 ```
 
-### Explanation of the Update:
-1. **Boolean Parameter (`DEPLOY_TO_AZURE`)**:
-   - A `booleanParam` is defined at the top of the pipeline in the `parameters` block:
-     ```groovy
-     booleanParam(name: 'DEPLOY_TO_AZURE', defaultValue: false, description: 'Set to true to deploy the React app to Azure Blob Storage')
-     ```
-   - This creates a parameter named `DEPLOY_TO_AZURE` that defaults to `false`. When the pipeline is triggered, you can set this to `true` to activate the deployment step.
+### Explanation of Key Steps:
+- **Checkout**: Fetches the source code from your repository.
+- **Install pnpm**: Ensures `pnpm` is installed globally.
+- **Install dependencies**: Installs the project dependencies in the `app` directory using `pnpm`.
+- **Build React App**: Runs the build process in the `app` folder to create the production-ready files.
+- **Run Playwright E2E Tests**: Executes Playwright E2E tests located in the `e2e` folder.
+- **Deploy to Azure Blob Storage**: Conditionally uploads the build folder to Azure Blob Storage if `DEPLOY_TO_AZURE` is set to `true`.
 
-2. **Conditional Execution of the Deployment Stage**:
-   - The `Deploy to Azure Blob Storage` stage is wrapped with a `when` block that checks the value of `DEPLOY_TO_AZURE`:
-     ```groovy
-     when {
-         expression { params.DEPLOY_TO_AZURE == true }
-     }
-     ```
-   - This ensures that the "Deploy to Azure Blob Storage" stage will only run if `DEPLOY_TO_AZURE` is set to `true`.
+### Azure Configuration:
+1. **Azure Storage Account**: Create a **Blob Storage** container in your Azure portal to host your React app.
+2. **Azure Service Principal**: Create a **Service Principal** in Azure AD and grant it access to your Blob Storage. Store the credentials (`client_id`, `client_secret`, and `tenant_id`) in Jenkins as **Azure Service Principal credentials**.
 
-### How It Works:
-- **When Triggering the Pipeline**: If you're manually triggering the pipeline, Jenkins will prompt you to select the value of the `DEPLOY_TO_AZURE` parameter.
-- **If `DEPLOY_TO_AZURE` is `true`**: The pipeline will proceed with the "Deploy to Azure Blob Storage" stage and upload the build files to Azure.
-- **If `DEPLOY_TO_AZURE` is `false`**: The pipeline will skip the deployment step and finish after running the tests.
+## Setting Up Jenkins Credentials:
+1. **Azure Service Principal Credentials**: 
+   - Go to **Manage Jenkins > Manage Credentials**.
+   - Add a new **Azure Service Principal** credential containing the `client_id`, `client_secret`, and `tenant_id`.
+   - Add the **Azure Storage Account Key** in the same way.
 
-### Triggering the Pipeline:
-- If you manually trigger the pipeline through Jenkins, you'll have the option to select `DEPLOY_TO_AZURE` as `true` or `false`.
-- If you want to trigger the pipeline automatically and set the parameter programmatically, you can use Jenkins API or a script to pass the value.
+2. **Configure Jenkins Node**: Ensure the Jenkins node (or agent) where the pipeline runs has the following installed:
+   - **Node.js**
+   - **pnpm** (via `npm install -g pnpm`)
+   - **Azure CLI** (via `curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash`)
 
-### Example:
-When manually triggering the pipeline in Jenkins, you’ll see a prompt like this:
+## Conclusion
+By following these steps, you’ll have a fully automated Jenkins pipeline that:
+1. Builds a **React app** in the `app` directory.
+2. Runs **Playwright** E2E tests located in the `e2e` directory.
+3. Optionally deploys the app to **Azure Blob Storage** depending on the `DEPLOY_TO_AZURE` parameter.
 
+Let me know if you have any further questions or need additional details!
 ```
-DEPLOY_TO_AZURE: [ ] true
-```
 
-You can check the box to set it to `true`, which will trigger the deployment to Azure Blob Storage.
+### Key Sections in the README:
+1. **Requirements**: Describes the prerequisites for the Jenkins setup and Azure configuration.
+2. **Pipeline Overview**: Provides a high-level overview of the pipeline stages with a flow diagram.
+3. **Jenkinsfile**: The actual Jenkins pipeline script with all the required steps and logic for the pipeline.
+4. **Azure Configuration**: Details on how to set up Azure resources like Blob Storage and Service Principal.
+5. **Setting Up Jenkins Credentials**: Instructions on how to securely store Azure credentials in Jenkins.
 
-### Conclusion:
-This updated Jenkins pipeline will conditionally deploy the React app to Azure Blob Storage based on the `DEPLOY_TO_AZURE` boolean parameter. You can use this flexibility to control whether or not to deploy, without modifying the pipeline code every time. Let me know if you need further adjustments!
+This README provides a comprehensive guide to setting up the pipeline with diagrams and all necessary details. Let me know if you'd like to refine any part or add additional sections!
