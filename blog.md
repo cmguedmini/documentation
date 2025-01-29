@@ -1,7 +1,3 @@
-Absolutely! Here's an updated version of the blog post, now including an introduction to set the context:
-
----
-
 # **How to Set Up a Jenkins Pipeline for E2E Testing and Azure Blob Storage Deployment**
 
 ## **Introduction**
