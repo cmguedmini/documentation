@@ -1,5 +1,3 @@
-Certainly! Below is a **README.md** template for setting up a Jenkins pipeline for running **E2E tests** with **Playwright** and deploying a **React app** to **Azure Blob Storage**. I've also included explanations and diagrams to make it easy to understand and follow.
-
 ```markdown
 # Jenkins Pipeline for E2E Testing and Azure Blob Storage Deployment
 
@@ -208,5 +206,3 @@ Let me know if you have any further questions or need additional details!
 3. **Jenkinsfile**: The actual Jenkins pipeline script with all the required steps and logic for the pipeline.
 4. **Azure Configuration**: Details on how to set up Azure resources like Blob Storage and Service Principal.
 5. **Setting Up Jenkins Credentials**: Instructions on how to securely store Azure credentials in Jenkins.
-
-This README provides a comprehensive guide to setting up the pipeline with diagrams and all necessary details. Let me know if you'd like to refine any part or add additional sections!
