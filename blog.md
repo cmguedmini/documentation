@@ -216,6 +216,9 @@ az ad sp create-for-rbac --name "JenkinsApp" --role contributor --scopes /subscr
 
 This will give you the `client_id`, `client_secret`, and `tenant_id` to use in Jenkins.
 
+### **3. No Azure Account? Here's How to Create One**
+If you don't have an Azure account yet, no worries! You can create one for free by following the official guide: [Create an Azure account](https://azure.microsoft.com/en-us/free/).
+
 ---
 
 ## **Running the Pipeline**
