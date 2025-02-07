@@ -3,8 +3,6 @@
 
 So you’ve built a React app (like this [ToDoList-React](https://github.com/cmguedmini/ToDoList-React.git) project) and want to automate deployments? This guide will show you how to deploy using Azure Blob Storage, Azure CDN, **and** the existing GitHub Actions workflow in the project. Let’s dive in!
 
----
-
 ## **What’s Special About This Setup?**
 - **Zero Manual Deployments**: The built-in GitHub Actions workflow (`deploy.yml`) automates everything.
 - **React Optimization**: Perfect for SPAs with client-side routing.
